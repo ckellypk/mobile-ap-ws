@@ -105,23 +105,24 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
         String token = Jwts.builder()
                 .setSubject(userName)
                 .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EXPIRATION_TIME))
-                .signWith(SignatureAlgorithm.HS512, SecurityConstants.TOKEN_SECRET)
+                .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
                 .compact();
 
-        /**
+        /*
          * So here is something weird and new to me about java: how certain instances of classes get
          * instantiated/injected. So you can create a class and store/reference it as a bean which allows it to be
          * autowired into other classes within the same application context. But if you instantiate the class using
-         * normal way you somewhat loose the advantages of Autowiring. From what I understand Autowiring had to do with
-         * a legacy XML file needed to create and reference certain context throughout the application.
+         * normal way ( new class instance) you somewhat loose the advantages of Autowiring. From what
+         * I understand Autowiring used to do with a legacy XML file needed to create and reference certain context
+         * throughout the application. Spring boot does this for you.
 
-         * There is another way to do this. By creating a SpringApplicationContext class we get access to all "beans" or
+         * By creating a SpringApplicationContext class we get access to all "beans" or
          * created classes within different packages of our application. Foe example below we are creating an instance
          * of the user service to get additional information about the user that is attempting to log in (like the email
          * we have on file for them in the database).
 
-         * But because in our WebSecurity.java file we instantiated an instance of this AuthenticationFilter class we
-         * CANNOT use beans to reference other classes lke we have done in other areas of our application.
+         * But because in our WebSecurity.java file we instantiated an instance of this AuthenticationFilter class classically
+         * we CANNOT use beans to reference other classes lke we have done in other areas of our application.
          * So why not just instantiate a new class whenever necessary? BECAUSE we need to get access to the existing
          * service we need to have the existing CONTEXT of the service in use instead of creating a new one.
 
@@ -140,12 +141,15 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
 
         res.addHeader(SecurityConstants.HEADER_STRING, SecurityConstants.TOKEN_PREFIX + token);
+
+        /*customized header returning the system assigned userId*/
         res.addHeader("UserID", userDto.getUserId());
 
-        /**
+        /*
          * After this token is distributed we need to confirm this token in the header of every request that comes
          *to our user service. We allow certain methods to communicate for authientication and this is set up in the
-         * WebSecurity.java file
+         * WebSecurity.java file. We can also specify which endpoind is allowed to authenticate or else it would default
+         * to url/login
         */
 
 

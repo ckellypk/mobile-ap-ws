@@ -6,6 +6,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @EnableWebSecurity
@@ -29,10 +30,15 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
      * class which filters based on email and password. Here is how we add it to the http pipeline
      *
      * When configuring the security we are allowing all post methods to '/users' controller to allow users to create  a
-     * user without identifying who they are. Outside of this we need all users to provide a token to access the endpoints
+     * user without identifying who they are. Outside this we need all users to provide a token to access the endpoints
      * resources
      *
-     * We add the filter at the end
+     * We add the filter at the end. here we are configuring the security pipeline. We want to allow entry into certain
+     * endpoints to allow authentication & authorization but require a token in the header for the rest. We do that here.
+     *
+     * We need to add certain behaviors we want our applicaions security config to have such as caching the token or
+     * requiring it at ever point. By default it caches the token. If we want to get rid of this option we must make
+     * the app stateless
      * */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -40,7 +46,12 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.POST, "/users")
                 .permitAll()
                 .anyRequest()
-                .authenticated().and().addFilter(new AuthenticationFilter((authenticationManager())));
+                .authenticated().and()
+                .addFilter(getAuthenticationFilter())
+                .addFilter(new AuthorizationFilter(authenticationManager()))/*instead of creating a new auth filter we invoke the method below that points user to correct endpoint*/
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
         ;
     }
 
@@ -48,6 +59,16 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService).passwordEncoder(bCryptPasswordEncoder);
+    }
+
+    /**
+     * We are adding an authentication endpoint to prevent the default route of url/users.
+     * We are changing it to url/users/login
+     * */
+    public AuthenticationFilter getAuthenticationFilter() throws Exception {
+        final AuthenticationFilter filter = new AuthenticationFilter(authenticationManager());
+        filter.setFilterProcessesUrl("/users/login"); //this is the authentication path.
+        return filter;
     }
 
 

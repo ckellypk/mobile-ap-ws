@@ -5,10 +5,11 @@ import com.appsdeveloperblog.app.ws.shared.dto.UserDto;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UserRepository extends CrudRepository<UserEntity, Long> {
+public interface UserRepository extends PagingAndSortingRepository<UserEntity, Long> {
 
     /*
     *This allows us to call generic repository methods that interact with the database.
@@ -19,9 +20,14 @@ public interface UserRepository extends CrudRepository<UserEntity, Long> {
     *We are extending the CrudRepository class meaning we can add additional methods for the purposes of validation
     *when interacting with the database. We then need to implement the method in the UserService Implementation
     *
+    * YOU MUST USE THE CORRECT NAMING CONVENTION TO MAKE THE CORRECT GENERIC QUERY. The name of the method is how the
+    * repository API knows which column of your entity (user in this case) to query.
+    *
     */
 
     UserEntity findByEmail(String email);
+
+    UserEntity findByUserId(String userId);
 
 
 
